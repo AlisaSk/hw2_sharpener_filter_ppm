@@ -15,9 +15,8 @@ int main(int argc, char const *argv[])
 
     int width;
     int heigh;
-    int depth;
 
-    fscanf(f, "P6 %d %d %d\n", &width, &heigh, &depth);
+    fscanf(f, "P6 %d %d 255\n", &width, &heigh);
 
     // parse source image
     int numPixels = width*heigh;
@@ -25,7 +24,6 @@ int main(int argc, char const *argv[])
     Pixel* image = (Pixel*)malloc(numPixels*sizeof(Pixel));
 
     fread(image, sizeof(Pixel), numPixels, f);
-
     fclose(f);
 
     // create new image
@@ -35,12 +33,12 @@ int main(int argc, char const *argv[])
     int histogram[] = {0, 0, 0, 0, 0, 0};
 
     // add pix to newImage
-    int y;
-    int pix = 0;
+    int y = 0;
     int k = 1;
-    short newRed, newGreen, newBlue;
+    short newRed = 0, newGreen = 0, newBlue = 0;
 
-    for (; pix < numPixels; pix++) {
+    for (int pix = 0; pix < numPixels; pix++) {
+      
         // copy first and last row
         if (pix < width || pix >= numPixels - width) {
             newImage[pix] = image[pix];
@@ -53,8 +51,6 @@ int main(int argc, char const *argv[])
             newImage[pix] = image[pix];
             y = (0.2126*newImage[pix].red + 0.7152*newImage[pix].green + 0.0722*newImage[pix].blue + 0.5)/51;
             histogram[y]++;
-            // printf("pix %d  y %d\n", pix, y);
-            // printf("his in y %d is %d\n", y, histogram[y]);
             continue;
         }
         // ....and last column
@@ -66,10 +62,22 @@ int main(int argc, char const *argv[])
             continue;
         }
         // create new RGB
-        newRed = -image[pix-width].red - image[pix-1].red + 5*image[pix].red - image[pix+1].red - image[pix+width].red;
-        newGreen = -image[pix-width].green - image[pix-1].green + 5*image[pix].green - image[pix+1].green - image[pix+width].green;
-        newBlue = -image[pix-width].blue - image[pix-1].blue + 5*image[pix].blue - image[pix+1].blue - image[pix+width].blue; 
+        int upper = pix-width;
+        int lower = pix+width;
+        int right = pix + 1;
+        int left = pix - 1;
 
+        Pixel pixUpper = image[upper];
+        Pixel pixLower = image[lower];
+        Pixel pixRight = image[right];
+        Pixel pixLeft = image[left];
+        Pixel pixCenter = image[pix];
+
+
+        newRed = -pixUpper.red - pixLeft.red + 5*pixCenter.red - pixRight.red - pixLower.red;
+        newGreen = -pixUpper.green - pixLeft.green + 5*pixCenter.green - pixRight.green - pixLower.green;
+        newBlue = -pixUpper.blue - pixLeft.blue + 5*pixCenter.blue - pixRight.blue - pixLower.blue; 
+        
         newImage[pix].red = newRed > 0 ? (newRed < 255 ? newRed: 255): 0;
         newImage[pix].green = newGreen > 0 ? (newGreen < 255 ? newGreen: 255): 0;
         newImage[pix].blue = newBlue > 0 ? (newBlue < 255 ? newBlue: 255): 0;
